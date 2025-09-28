@@ -7,13 +7,112 @@ Created on Tue Jul 29 22:38:06 2025
 
 import numpy as np
 #%% definitions
+class DC_motor_sys(object):
+    def __init__(self, motor_params, gains):    # need to define here and keep track of the system state
+        # unpack parameters and gains
+        R_a, L_a, K_b, J, B_visc, K_t = motor_params
+        K_p, K_i, K_d = gains
+        K = K_t/(J*R_a)
+        a = (K_t*K_b + B_visc*R_a)/(J*R_a)
+        # construct matrices
+        A = np.array([[-K*K_p/(1 + K*K_d), -K*K_i/(1 + K*K_d), a],
+                      [1, 0, 0],
+                      [K*K_p/(1 + K*K_d), K*K_i/(1 + K*K_d), -a]])
+        B = np.array([[0, 1 - K*K_d/(1 + K*K_d)],
+                      [0, 0],
+                      [0, K*K_d/(1 + K*K_d)]])
+        C = np.array([[1, 0, 0],
+                      [0, 0, 1]])
+        D = np.array([0, 0])
+        # apply variables
+        self.R_a = R_a
+        self.L_a = L_a
+        self.K_b = K_b
+        self.J = J
+        self.B_visc = B_visc
+        self.K_t = K_t
+        self.K_p = K_p
+        self.K_i = K_i
+        self.K_d = K_d
+        self.K = K
+        self.a = a
+        self.A = A
+        self.B = B
+        self.C = C
+        self.D = D
+        
+    def get_R_a(self):
+        return self.R_a
+    def get_L_a(self):
+        return self.L_a
+    def get_K_b(self):
+        return self.K_b
+    def get_J(self):
+        return self.J
+    def get_B_visc(self):
+        return self.B_visc
+    def get_K_t(self):
+        return self.K_t
+    def get_K_p(self):
+        return self.K_p
+    def get_K_i(self):
+        return self.K_i
+    def get_K_d(self):
+        return self.K_d
+    def get_K(self):
+        return self.K
+    def get_a(self):
+        return self.a
+    def get_A(self):
+        return self.A
+    def get_B(self):
+        return self.B
+    def get_C(self):
+        return self.C
+    def get_D(self):
+        return self.D
+    
+    def set_R_a(self, R_a):
+        self.R_a = R_a
+    def set_L_a(self, L_a):
+        self.L_a = L_a
+    def set_K_b(self, K_b):
+        self.K_b = K_b
+    def set_J(self, J):
+        self.J = J
+    def set_B(self, B):
+        self.B = B
+    def set_K_t(self, K_t):
+        self.K_t = K_t
+    def set_K_p(self, K_p):
+        self.K_p = K_p
+    def set_K_i(self, K_i):
+        self.K_i = K_i
+    def set_K_d(self, K_d):
+        self.K_d = K_d
+    
+    def update_gains(self, d_K_p, d_K_i, d_K_d):
+        self.K_p += d_K_p
+        self.K_i += d_K_i
+        self.k_d += d_K_d
+    
+    def state_transition(self, dt, u, x):
+        # state equation
+        x_dot = self.A @ x + self.B @ u
+        # output equation
+        y = self.C @ x + self.D @ u
+        # apply timestep
+        x_new = x + dt * x_dot
+    
+    
+    
+
 def compile_sys(motor_params, gains):
     # unpack parameters and gains
     R_a, L_a, K_b, J, B, K_t = motor_params
     K_p, K_i, K_d = gains
     K = K_t/(J*R_a)
     a = (K_t*K_b + B*R_a)/(J*R_a)
-    
     # construct matrices and system
     A = np.array([[-K*K_p/(1 + K*K_d), -K*K_i/(1 + K*K_d), a],
                   [1, 0, 0],
@@ -24,10 +123,8 @@ def compile_sys(motor_params, gains):
     C = np.array([[1, 0, 0],
                   [0, 0, 1]])
     D = np.array([0, 0])
-    
     # compile output
-    sys = sys = [A, B, C, D]
-    
+    sys = [A, B, C, D]
     return sys
 
 def update_gains(gains, action):
@@ -37,17 +134,16 @@ def update_gains(gains, action):
 def state_transition(sys, dt, u, x):
     # unpack matrices
     A, B, C, D = sys
-    
     # state equation
     x_dot = A @ x + B @ u
-    
     # output equation
     y = C @ x + D @ u
-    
     # apply timestep
     x_new = x + dt * x_dot
-    
     # compile output
     transition_result = [x_new, y]
-    
     return transition_result
+
+def sys_reward(transition_result, k1, k2):
+    
+    return
