@@ -28,13 +28,20 @@ class DC_motor_sys(object):
                       [0, 0, 1]])
         D = np.array([0, 0])
 
-        x0 = np. array([[omega_0],
+        x0 = np. array([[omega_ref - omega_0],
                         [0],
                         [omega_0]])
+        
+        x_dot_0 = np. array([[omega_dot_ref - omega_dot_0],
+                        [omega_ref - omega_0],
+                        [omega_dot_0]])
+        
         y0 = np.array([[omega_0],
                        [omega_dot_0]])
-        u = np.array([[omega_ref],
+        
+        r = np.array([[omega_ref],
                        [omega_dot_ref]])
+        
         # initialize variables
         self.R_a = R_a
         self.L_a = L_a
@@ -51,9 +58,10 @@ class DC_motor_sys(object):
         self.B = B
         self.C = C
         self.D = D
-        self.x = x0         # system state
-        self.y = y0         # system output
-        self.u = u          # reference input
+        self.x = x0                     # system state
+        self.y = y0                     # system output
+        self.r = r                      # reference input
+        self.x_dot = x_dot_0
         
     def get_R_a(self):
         return self.R_a
@@ -89,6 +97,8 @@ class DC_motor_sys(object):
         return self.x
     def get_y(self):
         return self.y
+    def get_r(self):
+        return self.r
     
     def set_R_a(self, R_a):
         self.R_a = R_a
@@ -110,6 +120,8 @@ class DC_motor_sys(object):
         self.K_d = K_d
     def set_x(self, x):
         self.x = x
+    def set_r(self, r):
+        self.r = r
     
     def update_gains(self, d_K_p, d_K_i, d_K_d):
         self.K_p += d_K_p
@@ -127,17 +139,36 @@ class DC_motor_sys(object):
                       [0, 0, 1]])
         self.D = np.array([0, 0])
     
-    def state_transition(self, dt, u):
+    def state_transition(self, dt):
         # state equation
-        x_dot = self.A @ self.x + self.B @ u
+        self.x_dot = self.A @ self.x + self.B @ self.r
         # output equation
-        self.y = self.C @ self.x + self.D @ u
+        self.y = self.C @ self.x + self.D @ self.r
         # apply timestep
-        x_new = self.x + dt * x_dot
+        x_new = self.x + dt * self.x_dot
         self.x = x_new
         return
     
 
-def sys_reward(transition_result, k1, k2):
-    
+def sys_reward(k1, k2, x, x_dot, y, K_p, K_i, K_d):
+    """
+    Calculate the reward from the systems outputs.
+
+    Parameters
+    ----------
+    y : array (2x1)
+        System output.
+    k1 : float
+        Tracking error penalty.
+    k2 : float
+        Control effort penalty.
+
+    Returns
+    -------
+    reward : TYPE
+        DESCRIPTION.
+    """
+    e = y[0]
+    u = K_p * e + K_i * x[1] + K_d * x_dot[0]
+    reward = - k1 * e^2 - k2 * u^2
     return reward

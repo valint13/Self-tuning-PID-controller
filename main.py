@@ -39,7 +39,7 @@ omega_ref = 10
 omega_dot_ref = 0
 ref_vals = [omega_ref, omega_dot_ref]
 
-
+replay_buffer = []
 
 
 system = ms.DC_motor_sys(motor_params, initial_gains, init_vals, ref_vals)
