@@ -9,6 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import src.motorsim as ms
+import src.neural_network as nn
 #%% DC motor parameters
 # system parameters
 R_a = 1         # armature resistance [Ohm]
@@ -23,11 +24,11 @@ motor_params = [R_a, L_a, K_b, J, B_visc, K_t]
 
 # initial conditions
 # initial gains
-K_p = 1         # proportional gain
-K_i = 0         # integrative gain
-K_d = 1         # derivative gain
+K_p_0 = 1         # proportional gain
+K_i_0 = 0         # integrative gain
+K_d_0 = 1         # derivative gain
 
-initial_gains = [K_p, K_i, K_d]
+initial_gains = [K_p_0, K_i_0, K_d_0]
 
 # initial state
 omega_0 = 0
@@ -39,7 +40,14 @@ omega_ref = 10
 omega_dot_ref = 0
 ref_vals = [omega_ref, omega_dot_ref]
 
+# simulation parameters
+dt = 1
+
+
 replay_buffer = []
 
 
 system = ms.DC_motor_sys(motor_params, initial_gains, init_vals, ref_vals)
+actor = nn.build_actor(statespace_size = 3, actionspace_size = 3)
+critic = nn.build_critic(statespace_size = 3, actionspace_size = 3)
+noise = ms.OU_noise(size = 3)

@@ -7,6 +7,7 @@ Created on Tue Jul 29 22:38:06 2025
 
 import numpy as np
 #%% definitions
+#%%%
 class DC_motor_sys(object):
     def __init__(self, motor_params, initial_gains, ref_vals, init_vals):
         # unpack parameters, gains and values
@@ -149,7 +150,36 @@ class DC_motor_sys(object):
         self.x = x_new
         return
     
+#%%%
+class OU_noise:
+    """Ornstein-Uhlenbeck process for temporally correlated noise."""
+    
+    def __init__(self, size, mu=0.0, theta=0.15, sigma=0.2):
+        """
+        Initialize parameters.
+        - size: Dimension of the action space (e.g., 1 for your DC motor voltage).
+        - mu: Mean (long-term value the process reverts to).
+        - theta: Rate of mean reversion.
+        - sigma: Volatility (standard deviation of the noise).
+        """
+        self.mu = mu * np.ones(size)
+        self.theta = theta
+        self.sigma = sigma
+        self.size = size
+        self.reset()
 
+    def reset(self):
+        """Reset the internal state to the mean (called at the start of each episode)."""
+        self.state = np.copy(self.mu)
+
+    def sample(self, dt):
+        """Generate a noise sample and update internal state."""
+        x = self.state
+        dx = self.theta * (self.mu - x) + self.sigma * dt^(1/2) * np.random.randn(self.size)
+        self.state = x + dx
+        return self.state
+    
+#%%%
 def sys_reward(k1, k2, x, x_dot, y, K_p, K_i, K_d):
     """
     Calculate the reward from the systems outputs.
