@@ -124,7 +124,8 @@ class DC_motor_sys(object):
     def set_r(self, r):
         self.r = r
     
-    def update_gains(self, d_K_p, d_K_i, d_K_d):
+    def update_gains(self, action):
+        d_K_p, d_K_i, d_K_d = action
         self.K_p += d_K_p
         self.K_i += d_K_i
         self.k_d += d_K_d
@@ -140,15 +141,17 @@ class DC_motor_sys(object):
                       [0, 0, 1]])
         self.D = np.array([0, 0])
     
-    def state_transition(self, dt):
+    def state_transition(self, dt, replay_buffer):
         # state equation
         self.x_dot = self.A @ self.x + self.B @ self.r
         # output equation
         self.y = self.C @ self.x + self.D @ self.r
         # apply timestep
         x_new = self.x + dt * self.x_dot
+        state_transition = [self.x, x_new]
+        # update state
         self.x = x_new
-        return
+        return state_transition
     
 #%%%
 class OU_noise:
@@ -180,7 +183,7 @@ class OU_noise:
         return self.state
     
 #%%%
-def sys_reward(k1, k2, x, x_dot, y, K_p, K_i, K_d):
+def sys_reward(x, x_dot, y, K_p, K_i, K_d, k1 = 1, k2 = 0.01):
     """
     Calculate the reward from the systems outputs.
 
@@ -202,3 +205,8 @@ def sys_reward(k1, k2, x, x_dot, y, K_p, K_i, K_d):
     u = K_p * e + K_i * x[1] + K_d * x_dot[0]
     reward = - k1 * e^2 - k2 * u^2
     return reward
+
+def store_transition(state_transition, action, reward, replay_buffer):
+    transition = (state_transition[0], action, reward, state_transition[1])
+    replay_buffer.append(transition)
+    return 
