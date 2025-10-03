@@ -9,6 +9,7 @@ from keras.models import Sequential, Model
 from keras.layers import Input, Dense, Concatenate
 from keras.optimizers import SGD, Adam
 
+import numpy as np
 #%% neural networks
 def build_actor(statespace_size, actionspace_size):
     actor = Sequential()
@@ -35,6 +36,11 @@ def build_critic(statespace_size, actionspace_size):
     critic.compile(optimizer = "Adam", loss = "MeanSquaredError")
     return critic
 
+def randomize_weights(network, mu = 0, sig = 0.01):
+    weights = network.get_weights()
+    random_weights = [np.random.normal(mu, sig, size=w.shape) for w in weights]
+    network.set_weights(random_weights)
+    return
 #%% test
 state = [1, 2, 3]
 action = [0.4, 0.6, 0]
