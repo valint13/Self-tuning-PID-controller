@@ -7,6 +7,7 @@ Created on Tue Jul 29 21:28:24 2025
 
 import numpy as np
 import matplotlib.pyplot as plt
+import tensorflow as tf
 
 import src.motorsim as ms
 import src.neural_network as nn
@@ -41,8 +42,9 @@ omega_dot_ref = 0
 ref_vals = [omega_ref, omega_dot_ref]
 
 # simulation parameters
-dt = 0.01
-discount = 0.1
+dt = 0.01       # timestep
+discount = 0.1  # discount rate for target Q-value
+tau = 0.001     # coefficient for the soft update of target networks
 
 replay_buffer = []
 
@@ -58,29 +60,54 @@ nn.randomize_weights(critic)
 target_actor = actor.copy()
 target_critic = critic.copy()
 
-noise_gen = ms.OU_noise(size = 3)
+noise_gen = ms.OU_noise_generator(size = 3)
 
 #%%
+# generate random noise
 noise_gen.reset()
 noise = noise_gen.sample()
 
+# add random noise to action
 action = actor.predict(system.x) + noise
 
+# apply action to system
 system.update_gains(action)
 system.update_matrices()
 state_transition = system.state_transition(dt = 1)
-
 reward = ms.sys_reward(system.x, system.x_dot, system.y, system.K_p, system.K_i, system.K_d)
-
 ms.store_transition(state_transition, action, reward, replay_buffer)
 
+# sample replay buffer
 state_batch, action_batch, reward_batch, new_state_batch = ms.sample_replay_buffer(replay_buffer, 64)
 
+# initialize target_Q variable
 target_Q_batch = [0] * len(new_state_batch)
 
+# calculate target Q values
 for i in range(len(new_state_batch)):
-    target_actior_prediction = target_actor.predict(new_state_batch[i])
-    target_critic_prediction = target_critic.predict(new_state_batch[i], target_actior_prediction)
+    target_actor_prediction = target_actor.predict(new_state_batch[i])
+    target_critic_prediction = target_critic.predict(new_state_batch[i], target_actor_prediction)
     target_Q_batch[i] = reward_batch[i] + discount * target_critic_prediction
-    
+
+# update critic network weights
 critic.train_on_batch([state_batch, action_batch], target_Q_batch)
+
+# make forward pass for gradient tracking
+with tf.GradientTape() as tape:
+    # perform forward pass on the actor network for gradient tracking
+    actor_prediction = actor(state_batch, training=True)
+    # perform forward pass on the critic network for gradient tracking
+    critic_prediciton = critic([state_batch, actor_prediction], training=True)
+
+# compute policy gradient
+policy_gradient = tape.gradient(critic_prediciton, actor.trainable_variables)
+
+# initialize an Adam optimizer for the actor gradient update
+actor_optimizer = tf.keras.optimizers.Adam(learning_rate = 1e-4)
+
+# apply the updated gradients to the actor network
+actor_optimizer.apply_gradients(zip(-policy_gradient, actor.trainable_variables))
+
+# soft updates on target networks
+target_actor.set_weights(tau * actor.get_weights() + (1 - tau) * target_actor.get_weights())
+target_critic.set_weights(tau * actor.get_weights() + (1 - tau) * target_actor.get_weights())

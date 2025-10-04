@@ -154,7 +154,7 @@ class DC_motor_sys(object):
         return state_transition
     
 #%%%
-class OU_noise:
+class OU_noise_generator:
     """Ornstein-Uhlenbeck process for temporally correlated noise."""
     
     def __init__(self, size, mu=0.0, theta=0.15, sigma=0.2):

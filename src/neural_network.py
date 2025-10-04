@@ -18,6 +18,7 @@ def build_actor(statespace_size, actionspace_size):
     actor.add(Dense(400, activation = "relu"))
     actor.add(Dense(300, activation = "relu"))
     actor.add(Dense(actionspace_size, activation = "tanh"))
+    actor.compile(optimizer = Adam(learning_rate = 10e-4))
     return actor
 
 def build_critic(statespace_size, actionspace_size):
