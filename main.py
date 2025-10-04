@@ -48,6 +48,28 @@ replay_buffer = []
 
 
 system = ms.DC_motor_sys(motor_params, initial_gains, init_vals, ref_vals)
+
 actor = nn.build_actor(statespace_size = 3, actionspace_size = 3)
+nn.randomize_weights(actor)
+
 critic = nn.build_critic(statespace_size = 3, actionspace_size = 3)
-noise = ms.OU_noise(size = 3)
+nn.randomize_weights(critic)
+
+target_actor = actor.copy()
+target_critic = critic.copy()
+
+noise_gen = ms.OU_noise(size = 3)
+
+#%%
+noise_gen.reset()
+noise = noise_gen.sample()
+
+action = actor.predict(system.x) + noise
+
+system.update_gains(action)
+system.update_matrices()
+state_transition = system.state_transition(dt = 1)
+
+reward = ms.sys_reward(system.x, system.x_dot, system.y, system.K_p, system.K_i, system.K_d)
+
+ms.store_transition(state_transition, action, reward, replay_buffer)

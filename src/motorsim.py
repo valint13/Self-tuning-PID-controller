@@ -130,7 +130,7 @@ class DC_motor_sys(object):
         self.K_i += d_K_i
         self.k_d += d_K_d
     
-    def update_sys_matrices(self):
+    def update_matrices(self):
         self.A = np.array([[-self.K*self.K_p/(1 + self.K*self.K_d), -self.K*self.K_i/(1 + self.K*self.K_d), self.a],
                       [1, 0, 0],
                       [self.K*self.K_p/(1 + self.K*self.K_d), self.K*self.K_i/(1 + self.K*self.K_d), -self.a]])
@@ -141,7 +141,7 @@ class DC_motor_sys(object):
                       [0, 0, 1]])
         self.D = np.array([0, 0])
     
-    def state_transition(self, dt, replay_buffer):
+    def state_transition(self, dt):
         # state equation
         self.x_dot = self.A @ self.x + self.B @ self.r
         # output equation

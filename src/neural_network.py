@@ -33,7 +33,7 @@ def build_critic(statespace_size, actionspace_size):
     # Output layer: Q value
     output = Dense(1, activation = "linear")(layer_2_out)
     critic = Model(inputs = [state_input, action_input], outputs = output)
-    critic.compile(optimizer = "Adam", loss = "MeanSquaredError")
+    critic.compile(optimizer = Adam(learning_rate = 10e-3), loss = "MeanSquaredError")
     return critic
 
 def randomize_weights(network, mu = 0, sig = 0.01):
