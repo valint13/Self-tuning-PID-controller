@@ -41,8 +41,8 @@ omega_dot_ref = 0
 ref_vals = [omega_ref, omega_dot_ref]
 
 # simulation parameters
-dt = 1
-
+dt = 0.01
+discount = 0.1
 
 replay_buffer = []
 
@@ -73,3 +73,12 @@ state_transition = system.state_transition(dt = 1)
 reward = ms.sys_reward(system.x, system.x_dot, system.y, system.K_p, system.K_i, system.K_d)
 
 ms.store_transition(state_transition, action, reward, replay_buffer)
+
+_, _, sample_reward, sample_new_states = ms.sample_replay_buffer(replay_buffer, 64)
+
+target_Q = [0] * len(sample_new_states)
+
+for i in range(len(sample_new_states)):
+    target_actior_prediction = target_actor.predict(sample_new_states[i])
+    target_critic_prediction = target_critic.predict(sample_new_states[i], target_actior_prediction)
+    target_Q[i] = sample_reward[i] + discount * target_critic_prediction

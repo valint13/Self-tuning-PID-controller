@@ -37,6 +37,7 @@ def build_critic(statespace_size, actionspace_size):
     critic.compile(optimizer = Adam(learning_rate = 10e-3), loss = "MeanSquaredError")
     return critic
 
+#%%
 def randomize_weights(network, mu = 0, sig = 0.01):
     weights = network.get_weights()
     random_weights = [np.random.normal(mu, sig, size=w.shape) for w in weights]
@@ -44,12 +45,17 @@ def randomize_weights(network, mu = 0, sig = 0.01):
     return
 
 def sample_replay_buffer(replay_buffer, batch_size):
-    sample = random.sample(replay_buffer, batch_size)
-    states = [elem[0] for elem in sample]
-    actions = [elem[1] for elem in sample]
-    rewards = [elem[2] for elem in sample]
-    new_states = [elem[3] for elem in sample]
-    return states, actions, rewards, new_states
+    if len(replay_buffer) > batch_size:
+        sample = random.sample(replay_buffer, batch_size)
+    else:
+        sample = replay_buffer
+        
+    sample_states = [elem[0] for elem in sample]
+    sample_actions = [elem[1] for elem in sample]
+    sample_rewards = [elem[2] for elem in sample]
+    sample_new_states = [elem[3] for elem in sample]
+    return sample_states, sample_actions, sample_rewards, sample_new_states
+
 #%% test
 state = [1, 2, 3]
 action = [0.4, 0.6, 0]
