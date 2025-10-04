@@ -10,6 +10,7 @@ from keras.layers import Input, Dense, Concatenate
 from keras.optimizers import SGD, Adam
 
 import numpy as np
+import random
 #%% neural networks
 def build_actor(statespace_size, actionspace_size):
     actor = Sequential()
@@ -41,6 +42,14 @@ def randomize_weights(network, mu = 0, sig = 0.01):
     random_weights = [np.random.normal(mu, sig, size=w.shape) for w in weights]
     network.set_weights(random_weights)
     return
+
+def sample_replay_buffer(replay_buffer, batch_size):
+    sample = random.sample(replay_buffer, batch_size)
+    states = [elem[0] for elem in sample]
+    actions = [elem[1] for elem in sample]
+    rewards = [elem[2] for elem in sample]
+    new_states = [elem[3] for elem in sample]
+    return states, actions, rewards, new_states
 #%% test
 state = [1, 2, 3]
 action = [0.4, 0.6, 0]
