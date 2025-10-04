@@ -74,11 +74,13 @@ reward = ms.sys_reward(system.x, system.x_dot, system.y, system.K_p, system.K_i,
 
 ms.store_transition(state_transition, action, reward, replay_buffer)
 
-_, _, sample_reward, sample_new_states = ms.sample_replay_buffer(replay_buffer, 64)
+state_batch, action_batch, reward_batch, new_state_batch = ms.sample_replay_buffer(replay_buffer, 64)
 
-target_Q = [0] * len(sample_new_states)
+target_Q_batch = [0] * len(new_state_batch)
 
-for i in range(len(sample_new_states)):
-    target_actior_prediction = target_actor.predict(sample_new_states[i])
-    target_critic_prediction = target_critic.predict(sample_new_states[i], target_actior_prediction)
-    target_Q[i] = sample_reward[i] + discount * target_critic_prediction
+for i in range(len(new_state_batch)):
+    target_actior_prediction = target_actor.predict(new_state_batch[i])
+    target_critic_prediction = target_critic.predict(new_state_batch[i], target_actior_prediction)
+    target_Q_batch[i] = reward_batch[i] + discount * target_critic_prediction
+    
+critic.train_on_batch([state_batch, action_batch], target_Q_batch)

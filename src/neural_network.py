@@ -50,11 +50,11 @@ def sample_replay_buffer(replay_buffer, batch_size):
     else:
         sample = replay_buffer
         
-    sample_states = [elem[0] for elem in sample]
-    sample_actions = [elem[1] for elem in sample]
-    sample_rewards = [elem[2] for elem in sample]
-    sample_new_states = [elem[3] for elem in sample]
-    return sample_states, sample_actions, sample_rewards, sample_new_states
+    state_batch = [elem[0] for elem in sample]
+    action_batch = [elem[1] for elem in sample]
+    reward_batch = [elem[2] for elem in sample]
+    new_state_batch = [elem[3] for elem in sample]
+    return state_batch, action_batch, reward_batch, new_state_batch
 
 #%% test
 state = [1, 2, 3]
