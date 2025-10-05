@@ -6,6 +6,8 @@ Created on Tue Jul 29 21:28:24 2025
 """
 
 import tensorflow as tf
+import keras
+import numpy as np
 
 import src.motorsim as ms
 import src.neural_network as nn
@@ -59,9 +61,13 @@ nn.randomize_weights(actor)
 critic = nn.build_critic(statespace_size = 3, actionspace_size = 3)
 nn.randomize_weights(critic)
 
-# initialize target networks
-target_actor = actor.copy()
-target_critic = critic.copy()
+# initialize target-actor network
+target_actor = keras.models.clone_model(actor)
+target_actor.set_weights(actor.get_weights())
+
+# initialize target-critic network
+target_critic = keras.models.clone_model(critic)
+target_critic.set_weights(critic.get_weights())
 
 # initialize Ornstein-Uhlenbeck noise generator
 noise_gen = ms.OU_noise_generator(size = 3)
@@ -69,10 +75,11 @@ noise_gen = ms.OU_noise_generator(size = 3)
 #%%
 # generate random noise
 noise_gen.reset()
-noise = noise_gen.sample()
+noise = noise_gen.sample(dt).reshape(len(system.x), 1)
 
 # add random noise to action
-action = actor.predict(system.x) + noise
+system_x_reshaped = system.x.flatten()[np.newaxis, :]       # reshape input to match expected batch dimensions for the predict method
+action = actor.predict(system_x_reshaped).T + noise
 
 # apply action to system
 system.update_gains(action)
@@ -82,14 +89,16 @@ reward = ms.sys_reward(system.x, system.x_dot, system.y, system.K_p, system.K_i,
 ms.store_transition(state_transition, action, reward, replay_buffer)
 
 # sample replay buffer
-state_batch, action_batch, reward_batch, new_state_batch = ms.sample_replay_buffer(replay_buffer, 64)
+state_batch, action_batch, reward_batch, new_state_batch = nn.sample_replay_buffer(replay_buffer, 64)
 
 # initialize target_Q variable
 target_Q_batch = [0] * len(new_state_batch)
 
 # calculate target Q values
 for i in range(len(new_state_batch)):
+    # reshape new_state_batch[i]
     target_actor_prediction = target_actor.predict(new_state_batch[i])
+    # reshape new_state_batch[i]
     target_critic_prediction = target_critic.predict(new_state_batch[i], target_actor_prediction)
     target_Q_batch[i] = reward_batch[i] + discount * target_critic_prediction
 

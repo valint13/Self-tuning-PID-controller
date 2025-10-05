@@ -126,9 +126,9 @@ class DC_motor_sys(object):
     
     def update_gains(self, action):
         d_K_p, d_K_i, d_K_d = action
-        self.K_p += d_K_p
-        self.K_i += d_K_i
-        self.k_d += d_K_d
+        self.K_p += d_K_p[0]
+        self.K_i += d_K_i[0]
+        self.K_d += d_K_d[0]
     
     def update_matrices(self):
         self.A = np.array([[-self.K*self.K_p/(1 + self.K*self.K_d), -self.K*self.K_i/(1 + self.K*self.K_d), self.a],
@@ -178,7 +178,7 @@ class OU_noise_generator:
     def sample(self, dt):
         """Generate a noise sample and update internal state."""
         x = self.state
-        dx = self.theta * (self.mu - x) + self.sigma * dt^(1/2) * np.random.randn(self.size)
+        dx = self.theta * (self.mu - x) + self.sigma * np.sqrt(dt) * np.random.randn(self.size)
         self.state = x + dx
         return self.state
     
@@ -203,7 +203,7 @@ def sys_reward(x, x_dot, y, K_p, K_i, K_d, k1 = 1, k2 = 0.01):
     """
     e = y[0]
     u = K_p * e + K_i * x[1] + K_d * x_dot[0]
-    reward = - k1 * e^2 - k2 * u^2
+    reward = - k1 * e**2 - k2 * u**2
     return reward
 
 def store_transition(state_transition, action, reward, replay_buffer):
