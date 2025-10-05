@@ -5,13 +5,11 @@ Created on Tue Jul 29 21:28:24 2025
 @author: Bálint
 """
 
-import numpy as np
-import matplotlib.pyplot as plt
 import tensorflow as tf
 
 import src.motorsim as ms
 import src.neural_network as nn
-#%% DC motor parameters
+#%% Setup
 # system parameters
 R_a = 1         # armature resistance [Ohm]
 L_a = 0         # armature inductance [H]
@@ -23,7 +21,17 @@ K_t = 0.01      # torque constant [Nm/A]
 
 motor_params = [R_a, L_a, K_b, J, B_visc, K_t]
 
-# initial conditions
+# reference values
+omega_ref = 10
+omega_dot_ref = 0
+ref_vals = [omega_ref, omega_dot_ref]
+
+# simulation parameters
+dt = 0.01       # timestep
+discount = 0.1  # discount rate for target Q-value
+tau = 0.001     # coefficient for the soft update of target networks
+
+#%% initial conditions
 # initial gains
 K_p_0 = 1         # proportional gain
 K_i_0 = 0         # integrative gain
@@ -36,30 +44,26 @@ omega_0 = 0
 omega_dot_0 = 0
 init_vals = [omega_0, omega_dot_0]
 
-# reference values
-omega_ref = 10
-omega_dot_ref = 0
-ref_vals = [omega_ref, omega_dot_ref]
-
-# simulation parameters
-dt = 0.01       # timestep
-discount = 0.1  # discount rate for target Q-value
-tau = 0.001     # coefficient for the soft update of target networks
-
+#%% Initialize system
+# initialize replay buffer
 replay_buffer = []
 
-
+# initialize system simulation
 system = ms.DC_motor_sys(motor_params, initial_gains, init_vals, ref_vals)
 
+# initialize actor network
 actor = nn.build_actor(statespace_size = 3, actionspace_size = 3)
 nn.randomize_weights(actor)
 
+# initialize critic network
 critic = nn.build_critic(statespace_size = 3, actionspace_size = 3)
 nn.randomize_weights(critic)
 
+# initialize target networks
 target_actor = actor.copy()
 target_critic = critic.copy()
 
+# initialize Ornstein-Uhlenbeck noise generator
 noise_gen = ms.OU_noise_generator(size = 3)
 
 #%%
